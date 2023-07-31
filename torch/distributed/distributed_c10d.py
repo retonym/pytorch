@@ -240,6 +240,7 @@ class BackendConfig:
             self.device_backend_map = {
                 "cpu": backend_val,
                 "cuda": backend_val,
+                "xpu" : backend_val,
             }
         else:
             # make sure the backend string is in the correct format

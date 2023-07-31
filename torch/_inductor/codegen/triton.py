@@ -16,6 +16,7 @@ from ..._dynamo import config as dynamo_config
 from .. import config, ir, scheduler
 from ..ir import ReductionHint
 from ..optimize_indexing import indexing_dtype_strength_reduction
+from ..scheduler import BaseScheduling
 from ..utils import (
     get_fused_kernel_name,
     instance_descriptor,
@@ -1215,6 +1216,7 @@ class TritonKernel(Kernel):
         triton_meta = {
             "signature": dict(enumerate(map(signature_of, signature))),
             "device": V.graph.scheduler.current_device.index,
+            "device_type": V.graph.scheduler.current_device.type,
             "constants": {},
             "mutated_arg_names": mutated_args,
         }
@@ -1343,7 +1345,7 @@ class TritonKernel(Kernel):
         return TritonCSEVariable(*args, **kwargs)
 
 
-class TritonScheduling:
+class TritonScheduling(BaseScheduling):
     def __init__(self, scheduler):
         self.scheduler = scheduler
 

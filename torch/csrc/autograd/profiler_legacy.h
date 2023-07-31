@@ -36,7 +36,8 @@ struct TORCH_API LegacyEvent {
       EventKind kind,
       at::StringView name,
       uint16_t thread_id,
-      bool record_cuda,
+      bool include_kernel,
+      ProfilerState state,
       at::RecordFunctionHandle handle = 0,
       std::vector<std::vector<int64_t>>&& shapes = {},
       int node_id = -1,
@@ -48,7 +49,21 @@ struct TORCH_API LegacyEvent {
         shapes_(shapes),
         node_id_(node_id),
         is_async_(is_async) {
-    record(record_cuda);
+    record(include_kernel, state);
+  }
+
+  // Constructor to be used in marking a kernel event.
+  LegacyEvent(
+      EventKind kind,
+      at::StringView name,
+      uint16_t thread_id,
+      ProfilerState state,
+      torch::profiler::impl::ProfilerEventStub event)
+      : name_(std::move(name)),
+        kind_(kind),
+        thread_id_(thread_id),
+        kernel_event_(event) {
+    record(true, state);
   }
 
   // Constructor to be used in conjunction with LegacyEvent::fromIValue.
@@ -65,7 +80,7 @@ struct TORCH_API LegacyEvent {
       int64_t cpu_ns,
       bool cuda_recorded,
       int64_t cuda_memory_usage = 0,
-      int device = -1,
+      at::Device device = at::Device(DeviceType::CPU),
       double cuda_us = -1)
       : cpu_ns_(cpu_ns),
         name_(std::move(name)),
@@ -82,7 +97,7 @@ struct TORCH_API LegacyEvent {
     // Sanity check values that were deserialized
     TORCH_INTERNAL_ASSERT(cpu_ns_ > 0);
     if (cuda_recorded) {
-      TORCH_INTERNAL_ASSERT(device_ >= 0);
+      TORCH_INTERNAL_ASSERT(device_.index() >= 0);
       TORCH_INTERNAL_ASSERT(cuda_us_ >= 0);
     }
   }
@@ -94,7 +109,7 @@ struct TORCH_API LegacyEvent {
   // Reconstructs an event from IValues given by toIValue.
   static LegacyEvent fromIValue(const at::IValue& eventIValue);
 
-  void record(bool record_cuda);
+  void record(bool include_kernel, ProfilerState state);
 
   std::string kindStr() const {
     switch (kind_) {
@@ -139,13 +154,24 @@ struct TORCH_API LegacyEvent {
     return static_cast<double>(cpu_ns_) / (1000.0);
   }
 
+  bool hasKernel() const {
+    return kernel_event_ != nullptr || (isRemote() && device_.index() != -1);
+  }
+
   double cudaElapsedUs(const LegacyEvent& e) const;
 
   bool hasCuda() const {
-    return cuda_event != nullptr || (isRemote() && device_ != -1);
+    return hasKernel() && device_.type() == DeviceType::CUDA;
   }
 
-  int device() const {
+  double xpuElapsedUs() const;
+  double xpuElapsedUs(const LegacyEvent& e) const;
+
+  bool hasXpu() const {
+    return hasKernel() && device_.type() == DeviceType::XPU;
+  }
+
+  at::Device device() const {
     return device_;
   }
 
@@ -156,6 +182,8 @@ struct TORCH_API LegacyEvent {
         device.is_cpu() || device.type() == c10::DeviceType::MKLDNN ||
         device.type() == c10::DeviceType::IDEEP) {
       cpu_memory_usage_ = alloc_size;
+    } else if (device.is_xpu()) {
+      xpu_memory_usage_ = alloc_size;
     } else {
       LOG(WARNING) << "Unsupported memory profiling device: " << device;
     }
@@ -167,6 +195,10 @@ struct TORCH_API LegacyEvent {
 
   int64_t cudaMemoryUsage() const {
     return cuda_memory_usage_;
+  }
+
+  int64_t xpuMemoryUsage() const {
+    return xpu_memory_usage_;
   }
 
   at::RecordFunctionHandle handle() const {
@@ -266,8 +298,9 @@ struct TORCH_API LegacyEvent {
   std::vector<std::vector<int64_t>> shapes_;
   int64_t cpu_memory_usage_ = 0;
   int64_t cuda_memory_usage_ = 0;
-  int device_ = -1;
-  torch::profiler::impl::ProfilerEventStub cuda_event = nullptr;
+  int64_t xpu_memory_usage_ = 0;
+  at::Device device_ = at::Device(DeviceType::CPU);
+  torch::profiler::impl::ProfilerEventStub kernel_event_ = nullptr;
   int node_id_ = 0;
   bool is_remote_ = false;
   int64_t cuda_us_ = -1;
@@ -354,6 +387,10 @@ TORCH_API void addEventList(std::vector<LegacyEvent>&& profiledEvents);
 TORCH_API void writeProfilerEventsToStream(
     std::ostream& out,
     const std::vector<LegacyEvent*>& events);
+// Add a kernel event to profile.
+TORCH_API void markKernel(
+    std::string name,
+    torch::profiler::impl::ProfilerEventStub& kernel_event);
 
 // Usage:
 //   {
