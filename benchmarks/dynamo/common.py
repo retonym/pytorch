@@ -530,7 +530,7 @@ def speedup_experiment(args, model_iter_fn, model, example_inputs, **kwargs):
     @contextlib.contextmanager
     def maybe_profile(*args, **kwargs):
         if kwargs.pop("enabled", True):
-            with torch.profiler.profile(*args, **kwargs) as p:
+            with torch.autograd.profiler_legacy.profile(enabled=True, use_xpu=True, *args, **kwargs) as p:
                 yield p
         else:
             yield
@@ -540,7 +540,7 @@ def speedup_experiment(args, model_iter_fn, model, example_inputs, **kwargs):
         prof: torch.profiler.profile = kwargs.pop("p", None)
         mark = kwargs.pop("mark", None)
         if prof:
-            with torch.profiler.record_function(mark):
+            with torch.autograd.profiler.record_function(mark):
                 yield
         else:
             yield
@@ -601,6 +601,10 @@ def speedup_experiment(args, model_iter_fn, model, example_inputs, **kwargs):
     pvalue = ttest_ind(timings[:, 0], timings[:, 1]).pvalue
     median = np.median(timings, axis=0)
     speedup = median[0] / median[1]
+
+    # print the result table formatted by the legacy profiler tool as your wish
+    print(p.key_averages().table(sort_by="self_xpu_time_total"))
+
     if args.dump_raw_metrics:
         np.save(
             f"{output_filename[:-4]}-raw_timings-{current_name}-{current_device}.npy",
@@ -1851,6 +1855,14 @@ def main(runner, original_dir=None):
 
 
 def run(runner, args, original_dir=None):
+    # make kernel name more readable
+    torch._inductor.config.triton.ordered_kernel_names = True
+    torch._inductor.config.triton.descriptive_kernel_names = True
+    torch._inductor.config.kernel_name_max_ops = 8
+
+    # chrome_trace output location
+    torch._dynamo.config.base_dir = os.path.join(os.path.dirname(args.output), "profiler_output")
+    
     # Pass the parsed args object to benchmark runner object
     runner.args = args
 
