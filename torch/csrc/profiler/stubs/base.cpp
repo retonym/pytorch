@@ -20,6 +20,10 @@ struct DefaultStubs : public ProfilerStubs {
     fail();
     return 0.f;
   }
+  virtual float elapsed(const ProfilerEventStub* event) const override {
+    fail();
+    return 0.f;
+  }
   void mark(const char*) const override {
     fail();
   }
@@ -74,6 +78,7 @@ struct DefaultStubs : public ProfilerStubs {
 
 REGISTER_DEFAULT(cuda, CUDA)
 REGISTER_DEFAULT(itt, ITT)
+REGISTER_DEFAULT(xpu, XPU)
 #undef REGISTER_DEFAULT
 
 } // namespace impl

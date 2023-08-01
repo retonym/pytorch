@@ -455,10 +455,10 @@ class WrapperCodeGen(CodeGen):
         self.reuses[output_buffer.get_name()] = input_buffer.get_name()
         self.write_reuse_line(input_buffer, output_buffer)
 
-    def codegen_cuda_device_guard_enter(self, device_idx):
+    def codegen_device_guard_enter(self, device_idx):
         self.lines.append(EnterCudaDeviceContextManagerLine(device_idx))
 
-    def codegen_cuda_device_guard_exit(self):
+    def codegen_device_guard_exit(self):
         self.lines.append(ExitCudaDeviceContextManagerLine())
 
     def generate_return(self, output_refs):

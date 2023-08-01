@@ -16,6 +16,7 @@ from torch._prims_common import is_float_dtype
 
 from .. import codecache, config, ir, metrics
 from ..codegen.wrapper import WrapperCodeGen
+from ..scheduler import BaseScheduling
 from ..utils import cache_on_self, sympy_product, sympy_subs, sympy_symbol
 from ..virtualized import ops, V
 from .common import (
@@ -1926,7 +1927,7 @@ class CppKernelProxy(CppKernel):
         self.codegen_loops_impl(self.loop_nest, code, worksharing)
 
 
-class CppScheduling:
+class CppScheduling(BaseScheduling):
     def __init__(self, scheduler):
         self.scheduler = scheduler
         self.get_kernel_group()

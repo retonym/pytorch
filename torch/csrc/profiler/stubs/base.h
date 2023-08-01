@@ -6,16 +6,19 @@
 #include <c10/util/strong_type.h>
 #include <torch/csrc/Export.h>
 
-struct CUevent_st;
-
 namespace torch {
 namespace profiler {
 namespace impl {
 
+class KernelEventBase {
+ public:
+  virtual ~KernelEventBase() = default;
+};
+
 // ----------------------------------------------------------------------------
 // -- Annotation --------------------------------------------------------------
 // ----------------------------------------------------------------------------
-using ProfilerEventStub = std::shared_ptr<CUevent_st>;
+using ProfilerEventStub = std::shared_ptr<KernelEventBase>;
 
 struct TORCH_API ProfilerStubs {
   virtual void record(int* device, ProfilerEventStub* event, int64_t* cpu_ns)
@@ -23,6 +26,7 @@ struct TORCH_API ProfilerStubs {
   virtual float elapsed(
       const ProfilerEventStub* event,
       const ProfilerEventStub* event2) const = 0;
+  virtual float elapsed(const ProfilerEventStub* event) const = 0;
   virtual void mark(const char* name) const = 0;
   virtual void rangePush(const char* name) const = 0;
   virtual void rangePop() const = 0;
@@ -38,6 +42,8 @@ TORCH_API void registerCUDAMethods(ProfilerStubs* stubs);
 TORCH_API const ProfilerStubs* cudaStubs();
 TORCH_API void registerITTMethods(ProfilerStubs* stubs);
 TORCH_API const ProfilerStubs* ittStubs();
+TORCH_API void registerXPUMethods(ProfilerStubs* stubs);
+TORCH_API const ProfilerStubs* xpuStubs();
 
 using vulkan_id_t = strong::type<
     int64_t,

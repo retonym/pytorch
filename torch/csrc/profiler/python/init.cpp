@@ -34,6 +34,7 @@ void initPythonBindings(PyObject* module) {
       .value("Disabled", ProfilerState::Disabled)
       .value("CPU", ProfilerState::CPU)
       .value("CUDA", ProfilerState::CUDA)
+      .value("XPU", ProfilerState::XPU)
       .value("NVTX", ProfilerState::NVTX)
       .value("ITT", ProfilerState::ITT)
       .value("KINETO", ProfilerState::KINETO)

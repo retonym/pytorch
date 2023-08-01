@@ -139,10 +139,20 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused) {
       .def("device", &LegacyEvent::device)
       .def("cpu_elapsed_us", &LegacyEvent::cpuElapsedUs)
       .def("cuda_elapsed_us", &LegacyEvent::cudaElapsedUs)
+      .def(
+          "xpu_elapsed_us",
+          static_cast<double (LegacyEvent::*)(void) const>(
+              &LegacyEvent::xpuElapsedUs))
+      .def(
+          "xpu_elapsed_us",
+          static_cast<double (LegacyEvent::*)(const LegacyEvent& e) const>(
+              &LegacyEvent::xpuElapsedUs))
       .def("has_cuda", &LegacyEvent::hasCuda)
+      .def("has_xpu", &LegacyEvent::hasXpu)
       .def("shapes", &LegacyEvent::shapes)
       .def("cpu_memory_usage", &LegacyEvent::cpuMemoryUsage)
       .def("cuda_memory_usage", &LegacyEvent::cudaMemoryUsage)
+      .def("xpu_memory_usage", &LegacyEvent::xpuMemoryUsage)
       .def("handle", &LegacyEvent::handle)
       .def("node_id", &LegacyEvent::nodeId)
       .def("is_remote", &LegacyEvent::isRemote)

@@ -18,6 +18,10 @@ struct ITTMethods : public ProfilerStubs {
     return 0;
   }
 
+  virtual float elapsed(const ProfilerEventStub* event) const override {
+    return 0;
+  }
+
   void mark(const char* name) const override {
     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
     torch::profiler::itt_mark(name);

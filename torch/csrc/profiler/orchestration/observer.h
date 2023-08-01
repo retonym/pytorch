@@ -22,6 +22,7 @@ enum class C10_API_ENUM ProfilerState {
   Disabled = 0,
   CPU, // CPU-only profiling
   CUDA, // CPU + CUDA events
+  XPU, // CPU + XPU events
   NVTX, // only emit NVTX markers
   ITT, // only emit ITT markers
   KINETO, // use libkineto
