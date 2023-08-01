@@ -356,3 +356,6 @@ venv/
 
 # Log files
 *.log
+
+# my setting
+inductor_log/
