@@ -24,6 +24,7 @@
 #include <torch/csrc/utils/python_raii.h>
 
 #include <iostream>
+#include <memory>
 #include <utility>
 
 namespace py = pybind11;
@@ -108,11 +109,16 @@ struct EnableHermeticPyObject {
 class PythonKernelHolder : public c10::OperatorKernel {
   c10::SafePyObject func_;
   c10::DispatchKey dispatch_key_;
+  bool is_torch_compile_python_kernel_;
 
  public:
-  PythonKernelHolder(py::object func, c10::DispatchKey dispatch_key)
+  PythonKernelHolder(
+      py::object func,
+      c10::DispatchKey dispatch_key,
+      bool is_torch_compile_python_kernel = false)
       : func_(func.release().ptr(), getPyInterpreter()),
-        dispatch_key_(dispatch_key) {}
+        dispatch_key_(dispatch_key),
+        is_torch_compile_python_kernel_(is_torch_compile_python_kernel) {}
 
   void operator()(
       const c10::OperatorHandle& op,
@@ -344,6 +350,33 @@ void initDispatchBindings(PyObject* module) {
           py::arg("name"),
           py::arg("dispatch") = "",
           py::arg("debug") = "impl_t_t")
+      .def(
+          "impl_t_c",
+          [](const py::object& self,
+             const char* name,
+             c10::DispatchKey dispatch,
+             py::object func) {
+            HANDLE_TH_ERRORS
+            auto& lib = self.cast<torch::Library&>();
+            bool is_compiling_aten_op = true;
+            lib.impl(
+                name,
+                torch::dispatch(
+                    dispatch,
+                    CppFunction::makeFromBoxedFunctor(
+                        std::make_unique<PythonKernelHolder>(
+                            func, dispatch, is_compiling_aten_op))),
+                register_or_verify());
+            python_registrations_[lib._resolve(name)].insert_or_assign(
+                dispatch,
+                std::make_shared<c10::SafePyObject>(
+                    func.release().ptr(), getPyInterpreter()));
+            END_HANDLE_TH_ERRORS_PYBIND
+          },
+          "",
+          py::arg("name"),
+          py::arg("dispatch"),
+          py::arg("func"))
       .def(
           "impl",
           [](const py::object& self,
