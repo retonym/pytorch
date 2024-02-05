@@ -249,7 +249,13 @@ def dynamo_timed(original_function=None, phase_name=None):
                 time_spent = time.time() - t0
             compilation_time_metrics[key].append(time_spent)
             if phase_name:
-                frame_key = str(curr_frame)
+                compile_id = torch._guards.CompileContext.current_compile_id()
+
+                if compile_id is not None:
+                    frame_key = str(compile_id)
+                else:
+                    frame_key = str(curr_frame)
+
                 if frame_key not in frame_phase_timing:
                     frame_phase_timing[frame_key] = {}
                 assert (
