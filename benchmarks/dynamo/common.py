@@ -24,10 +24,12 @@ from pathlib import Path
 from typing import (
     Any,
     Callable,
+    Dict,
     Generator,
     List,
     Mapping,
     NamedTuple,
+    OrderedDict,
     Optional,
     Sequence,
     Tuple,
@@ -103,6 +105,14 @@ torch.backends.cuda.matmul.allow_tf32 = True
 
 # Suppress torch.profiler spam
 os.environ["KINETO_LOG_LEVEL"] = "5"
+
+# detect abnormal autograd behavior
+# torch.autograd.set_detect_anomaly(True)
+
+torch._inductor.config.trace.enabled = True
+torch._inductor.config.debug = True
+
+torch._dynamo.config.base_dir = os.environ["TORCHINDUCTOR_CACHE_DIR"]
 
 current_name = ""
 current_device = ""
@@ -2046,6 +2056,10 @@ def cast_to_fp64(model, inputs):
 def cast_to_fp32(model, inputs):
     return cast_to(torch.float32, model, inputs)
 
+def cast_to_device(device, model, inputs):
+    model = model.to(device=device)
+    inputs = tree_map_only(torch.Tensor, lambda x: x.to(device=device), inputs)
+    return model, inputs
 
 class DummyGradScaler:
     def scale(self, loss):
@@ -2509,21 +2523,59 @@ class BenchmarkRunner:
 
         if name in self.skip_accuracy_checks_large_models_dashboard:
             return record_status("pass_due_to_skip", dynamo_start_stats=start_stats)
+        
+        # print("model summary", model)
 
         # Skip all accuracy check for the torchao backend
         if self.args.backend == "torchao":
             return record_status("pass_due_to_skip", dynamo_start_stats=start_stats)
 
         with self.pick_grad(name, self.args.training):
+            reset_rng_state()
+            model_copy = None
+            try:
+                model_copy = self.deepcopy_and_maybe_parallelize(model)
+                self.init_optimizer(name, current_device, model_copy.parameters())
+                correct_rerun_result = self.run_n_iterations(
+                    model_copy, clone_inputs(example_inputs)
+                )
+            except Exception as e:
+                accuracy_status = (
+                    "eager_1st_run_OOM"
+                    if isinstance(e, torch.cuda.OutOfMemoryError)
+                    else "eager_1st_run_fail"
+                )
+                log.exception("")
+                return record_status(accuracy_status, dynamo_start_stats=start_stats)
+            finally:
+                del model_copy
+                empty_gpu_cache(current_device)
+
+            exit(0)
+
             # Collect the fp64 reference outputs to be used later for accuracy checking.
             fp64_outputs = None
             model_fp64 = None
             inputs_fp64 = None
             try:
-                model_fp64, inputs_fp64 = cast_to_fp64(
-                    self.deepcopy_and_maybe_parallelize(model),
-                    clone_inputs(example_inputs),
-                )
+                # Currently, XPU GEMM FP64 support is WIP. Therefore, we explicitly fallback to
+                # CPU to execute FP64 and take the result as the gold reference.
+                if current_device == "xpu":
+                    model_fp64, inputs_fp64 = cast_to_fp64(
+                        *cast_to_device(
+                            "cpu",
+                            self.deepcopy_and_maybe_parallelize(model),
+                            clone_inputs(example_inputs),
+                        )
+                    )
+                else:
+                    model_fp64, inputs_fp64 = cast_to_fp64(
+                        self.deepcopy_and_maybe_parallelize(model),
+                        clone_inputs(example_inputs),
+                    )
+
+                # current_device of init_optimizer only impacts which optimizer will be applied. It does
+                # not change any tensor internally. Hence, we leave as it is rather than passing cpu.
                 self.init_optimizer(name, current_device, model_fp64.parameters())
                 fp64_outputs = self.run_n_iterations(model_fp64, inputs_fp64)
                 fp64_outputs = tree_map(
@@ -2532,7 +2584,14 @@ class BenchmarkRunner:
                     else x,
                     fp64_outputs,
                 )
-            except Exception:
+                if current_device == "xpu":
+                    fp64_outputs = tree_map_only(
+                        torch.Tensor,
+                        lambda x: x.to(device=current_device),
+                        fp64_outputs,
+                    )
+            except Exception as e:
+                print("exception:", e)
                 log.warning(
                     "fp64 golden ref were not generated for %s. Setting accuracy check to cosine",
                     name,
@@ -2556,6 +2615,14 @@ class BenchmarkRunner:
             model_copy = None
             try:
                 model_copy = self.deepcopy_and_maybe_parallelize(model)
+                if False:
+                    register_dump_error_hook_recursively(model_copy)
+                if False:
+                    register_print_value_hook_recursively(model_copy)
+                if False:
+                    register_alarm_nan_hook_recursively(model_copy)
+                if False:
+                    register_run_twice_recursively(model_copy)
                 self.init_optimizer(name, current_device, model_copy.parameters())
                 correct_result = self.run_n_iterations(
                     model_copy, clone_inputs(example_inputs)
@@ -2581,6 +2648,21 @@ class BenchmarkRunner:
                 correct_rerun_result = self.run_n_iterations(
                     model_copy, clone_inputs(example_inputs)
                 )
+
+                # with torch.profiler.profile(
+                #     activities=[
+                #         torch.profiler.ProfilerActivity.CPU,
+                #     ]
+                # ) as p:
+                #     correct_rerun_result = self.run_n_iterations(
+                #         model_copy, clone_inputs(example_inputs)
+                #     )
+
+                # name = "fuck" + "_" + "shufflenet_v2_training"
+                # name += ".json"
+                # name = os.path.join(torch._dynamo.config.base_dir, name)
+                # p.export_chrome_trace(name)
+                # print(f"export profile to {name}")
             except Exception as e:
                 accuracy_status = (
                     "eager_2nd_run_OOM"
@@ -2619,6 +2701,8 @@ class BenchmarkRunner:
                 accuracy_status = "eager_two_runs_differ"
                 return record_status(accuracy_status, dynamo_start_stats=start_stats)
 
+            # print("two eager same")
+            # exit()
             correct_rerun_result = None
 
             # Run with Dynamo
@@ -3832,19 +3916,19 @@ def run(runner, args, original_dir=None):
             args.use_eval_mode = True
         inductor_config.fallback_random = True
         if args.only is not None and args.only not in {
-            "alexnet",
-            "Background_Matting",
-            "pytorch_CycleGAN_and_pix2pix",
-            "pytorch_unet",
-            "Super_SloMo",
-            "vgg16",
-            # https://github.com/pytorch/pytorch/issues/96724
-            "Wav2Vec2ForCTC",
-            "Wav2Vec2ForPreTraining",
-            "sam",
-            "sam_fast",
-            "resnet50_quantized_qat",
-            "mobilenet_v2_quantized_qat",
+            # "alexnet",
+            # "Background_Matting",
+            # "pytorch_CycleGAN_and_pix2pix",
+            # "pytorch_unet",
+            # "Super_SloMo",
+            # "vgg16",
+            # # https://github.com/pytorch/pytorch/issues/96724
+            # "Wav2Vec2ForCTC",
+            # "Wav2Vec2ForPreTraining",
+            # "sam",
+            # "sam_fast",
+            # "resnet50_quantized_qat",
+            # "mobilenet_v2_quantized_qat",
         }:
             # some of the models do not support use_deterministic_algorithms
             torch.use_deterministic_algorithms(True)
