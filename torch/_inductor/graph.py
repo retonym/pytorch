@@ -1233,6 +1233,7 @@ class GraphLowering(torch.fx.Interpreter):
 
     def run_node(self, n: torch.fx.Node) -> object:
         def debug(msg: str) -> None:
+            # breakpoint()
             log.debug("lowering %s %s", LazyString(n.format_node), msg)
 
         buffer_watermark = len(self.buffers)

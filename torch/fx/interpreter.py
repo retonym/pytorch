@@ -88,6 +88,11 @@ class Interpreter:
         self.garbage_collect_values = garbage_collect_values
         self.extra_traceback = True
 
+        # breakpoint()
+        print("\nfuck you")
+        for node in self.graph.nodes:
+            print("node", node)
+
         if self.garbage_collect_values:
             # Run through reverse nodes and record the first instance of a use
             # of a given node. This represents the *last* use of the node in the
@@ -133,6 +138,10 @@ class Interpreter:
         pbar = tqdm(total=len(self.graph.nodes),
                     desc=f"{self.name}: {str(list(self.graph.nodes)) if config.verbose_progress else ''}",
                     initial=0, position=0, leave=True, disable=config.disable_progress, delay=0)
+        
+        print("\nfuck me")
+        for node in self.graph.nodes:
+            print("node", node)
 
         for node in self.graph.nodes:
             pbar.update(1)

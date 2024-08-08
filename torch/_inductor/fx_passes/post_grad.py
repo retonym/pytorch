@@ -93,26 +93,26 @@ def post_grad_passes(gm: torch.fx.GraphModule, is_inference: bool):
 
     if config.pattern_matcher:
         lazy_init()
-        optimus_scuba_log["before_recompile_post_grad"] = upload_graph(gm.graph)
-        group_batch_fusion_passes(gm.graph, pre_grad=False)
+        # optimus_scuba_log["before_recompile_post_grad"] = upload_graph(gm.graph)
+        # group_batch_fusion_passes(gm.graph, pre_grad=False)
         remove_noop_ops(gm.graph)
-        for patterns in pass_patterns:
-            patterns.apply(gm.graph)  # type: ignore[arg-type]
-        for pass_name in config.post_grad_fusion_options:
-            # skip all patterns for group batch fusions
-            if pass_name in POST_GRAD_FUSIONS:
-                continue
-            pattern_matcher_pass = POST_GRAD_PATTERNS[pass_name]
-            inductor_before_change = save_inductor_dict(
-                [pattern_matcher_pass.pass_name]
-            )
-            pattern_matcher_pass.apply(gm.graph)  # type: ignore[arg-type]
-            if not is_same_dict(counters["inductor"], inductor_before_change):
-                optimus_scuba_log[
-                    f"{pattern_matcher_pass.pass_name}_post_grad"
-                ] = upload_graph(gm.graph)
-        if config.b2b_gemm_pass:
-            B2B_GEMM_PASS.apply(gm.graph)  # type: ignore[arg-type]
+        # for patterns in pass_patterns:
+        #     patterns.apply(gm.graph)  # type: ignore[arg-type]
+        # for pass_name in config.post_grad_fusion_options:
+        #     # skip all patterns for group batch fusions
+        #     if pass_name in POST_GRAD_FUSIONS:
+        #         continue
+        #     pattern_matcher_pass = POST_GRAD_PATTERNS[pass_name]
+        #     inductor_before_change = save_inductor_dict(
+        #         [pattern_matcher_pass.pass_name]
+        #     )
+        #     pattern_matcher_pass.apply(gm.graph)  # type: ignore[arg-type]
+        #     if not is_same_dict(counters["inductor"], inductor_before_change):
+        #         optimus_scuba_log[
+        #             f"{pattern_matcher_pass.pass_name}_post_grad"
+        #         ] = upload_graph(gm.graph)
+        # if config.b2b_gemm_pass:
+        #     B2B_GEMM_PASS.apply(gm.graph)  # type: ignore[arg-type]
 
     if config._micro_pipeline_tp:
         micro_pipeline_tp_pass(gm.graph)
@@ -755,6 +755,13 @@ def remove_noop_ops(graph: torch.fx.Graph):
             output_storages.add(get_node_storage(out))
 
     for node in graph.nodes:
+        print("process node: ",node.name)
+        print("node target: ",node.target)
+        print("node args: ",node.args)
+        print("node users: ",node.users)
+        print("node op: ",node.op)
+        print("node type: ",node.type)
+        print("node meta: ",node.meta)
         if node.target in noop_registry:
             cond, src_index = noop_registry[node.target]
             if isinstance(src_index, int):
@@ -762,6 +769,7 @@ def remove_noop_ops(graph: torch.fx.Graph):
             else:
                 src = src_index(node.args)
             if not isinstance(src, torch.fx.Node):
+                print("exit 1")
                 continue
             # Don't introduce new aliasing between inputs and outputs.
             # See fx_passes/README.md for a discussion of why this is
@@ -774,6 +782,7 @@ def remove_noop_ops(graph: torch.fx.Graph):
                 and node_storage in output_storages
                 and (src_storage in input_storages or src_storage in output_storages)
             ):
+                print("exit 2")
                 continue
 
             # Even if input and outputs are expected to alias,
@@ -783,14 +792,18 @@ def remove_noop_ops(graph: torch.fx.Graph):
                 and node in output_node.args
                 and (src in inputs or src in output_node.args)
             ):
+                print("exit 3")
                 continue
 
             is_valid, args, kwargs = get_fake_args_kwargs(node)
             if not is_valid:
+                print("exit 4")
                 continue
             if same_meta(node, src) and cond(*args, **kwargs):
+                print("no exit")
                 node.replace_all_uses_with(src)
                 graph.erase_node(node)
+        print("exit 0")
 
 
 def decompose_auto_functionalized(graph):
