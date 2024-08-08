@@ -374,6 +374,16 @@ def maybe_disable_comprehensive_padding(example_inputs: List[torch.Tensor]):
     For CPU backend, enable comprehensive padding causes some unit tests
     fail due to changing number of generated kernels. Skip for now.
     """
+    # has_cuda_or_xpu = any(
+    #     t.device.type in ["cuda", "xpu"] for t in example_inputs if isinstance(t, torch.Tensor)
+    # )
+
+    # if config.comprehensive_padding and not has_cuda_or_xpu:
+    #     perf_hint_log.info("Skip comprehensive padding on CPU")
+    #     return config.patch(comprehensive_padding=False)
+    # else:
+    #     return contextlib.nullcontext()
+
     has_cuda = any(
         t.device.type == "cuda" for t in example_inputs if isinstance(t, torch.Tensor)
     )
