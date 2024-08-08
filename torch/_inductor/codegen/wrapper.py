@@ -1758,6 +1758,14 @@ class WrapperCodeGen(CodeGen):
                     self.kernel_autotune_calls.writeline(
                         f"{kernel_name}.run({', '.join(all_args)}, grid={grid_str}, stream={stream_name})"
                     )
+
+                    # breakpoint()
+
+                    # if kernel_name == "triton_per_fused_sort_0":
+                    #     for args in all_args:
+                    #         self.kernel_autotune_calls.writeline(
+                    #             f"print {args}\n",
+                    #         )
                     self.kernel_autotune_calls.writeline(
                         f"del {', '.join(arg for arg in tensor_args.values())}\n",
                     )
