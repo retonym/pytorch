@@ -123,9 +123,12 @@ class TORCH_API TensorBase {
   }
 
   TensorBase contiguous(MemoryFormat memory_format=MemoryFormat::Contiguous) const {
+    // std::cout << "contiguous ???????" << std::endl;
     if (is_contiguous(memory_format)) {
+      // std::cout << "path a" << std::endl;
       return *this;
     } else {
+      // std::cout << "path b" << std::endl;
       return __dispatch_contiguous(memory_format);
     }
   }
