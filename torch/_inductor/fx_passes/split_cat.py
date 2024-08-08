@@ -61,6 +61,7 @@ pre_grad_pass_names = [
 ]
 
 post_grad_pass_names = [
+    "atomic_cast_pass",
     "normalization_aten_pass",
     "decompose_mm_pass",
     "unbind_stack_aten_pass",
