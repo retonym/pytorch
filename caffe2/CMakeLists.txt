@@ -1030,7 +1030,7 @@ if(USE_XPU)
     message(FATAL_ERROR "Fail to fetch ${TORCH_XPU_OPS_REPO_URL}")
   endif()
   execute_process(
-    COMMAND git checkout --quiet ${TORCH_XPU_OPS_COMMIT}
+    COMMAND git log -n 1
     WORKING_DIRECTORY ${TORCH_XPU_OPS_DIR}
     RESULT_VARIABLE _exitcode)
   if(NOT _exitcode EQUAL 0)
