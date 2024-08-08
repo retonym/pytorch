@@ -1751,6 +1751,15 @@ Tensor clone(const Tensor& src, std::optional<c10::MemoryFormat> optional_memory
     self = at::empty_like(src, src.options(), memory_format);
   }
 
+  // std::cout << "clone!!!!!" << std::endl;
+  // std::cout << "memory format: " << memory_format << std::endl;
+
+  // for (int i = 0; i < src.ndimension(); i++) {
+  //   std::cout << "size: " << src.size(i) << std::endl;
+  //   std::cout << "stride: " << src.stride(i) << std::endl;
+  // }
+  // std::cout << "self.suggest_memory_format: " << self.suggest_memory_format() << std::endl;
+
   if (src._is_zerotensor()) {
     self.zero_();
   } else {

@@ -106,7 +106,9 @@ Tensor & detach_(Tensor & self) {
 }
 
 Tensor contiguous(const Tensor& self, MemoryFormat memory_format) {
+  // std::cout << "aten contiguous operator" << std::endl;
   if (self.is_contiguous(memory_format)) {
+    // std::cout << "return contiguous self" << std::endl;
     return self;
   }
   TORCH_CHECK(
