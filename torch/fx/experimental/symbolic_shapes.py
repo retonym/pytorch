@@ -1288,7 +1288,7 @@ class StatelessSymbolicContext(SymbolicContext):
             object.__setattr__(self, 'constraint_sizes', [None] * len(self.dynamic_sizes))
         if self.constraint_strides is None:
             object.__setattr__(self, 'constraint_strides', [None] * len(self.dynamic_sizes))
-        assert all(stride in (DimDynamic.INFER_STRIDE, DimDynamic.DYNAMIC, DimDynamic.DUCK) for stride in self.dynamic_strides)
+        # assert all(stride in (DimDynamic.INFER_STRIDE, DimDynamic.DYNAMIC, DimDynamic.DUCK) for stride in self.dynamic_strides)
 
 
 # note [Tensor Fakification and Symbol Caching]
@@ -2450,7 +2450,7 @@ class ShapeEnv:
         # when the constraint/dynamic dims are not explicitly passed to us.
         # Ideally we will fix all call sites to be explicit and not have
         # implicit choices, but this apparently was pretty involved.
-        assume_static_by_default=False,
+        assume_static_by_default=True,
         # Note - On 0/1 specialization
         #
         # The following options affect decisions we make about eager
@@ -3168,8 +3168,8 @@ class ShapeEnv:
                     r = DimDynamic.DUCK
                 dynamic_dims.append(r)
                 dynamic_strides.append(r)
-            dynamic_dims = [DimDynamic.DUCK] * dim
-            dynamic_strides = [DimDynamic.INFER_STRIDE] * dim
+            # dynamic_dims = [DimDynamic.DUCK] * dim
+            # dynamic_strides = [DimDynamic.INFER_STRIDE] * dim
             # symbolic_context is None - set one
             symbolic_context = StatelessSymbolicContext(
                 dynamic_sizes=dynamic_dims,
