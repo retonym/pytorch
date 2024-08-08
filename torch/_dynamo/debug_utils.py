@@ -313,6 +313,7 @@ def run_fwd_maybe_bwd(gm, args, only_fwd=False, disable_clone=False):
     When disable_clone is True, we will use args as-is without cloning.
     This is higher fidelity but we may destroy the args in the process.
     """
+    # print("run_fwd_maybe_bwd")
     from .testing import collect_results, reduce_to_scalar_loss, requires_bwd_pass
 
     gm = copy.deepcopy(gm)
@@ -322,14 +323,19 @@ def run_fwd_maybe_bwd(gm, args, only_fwd=False, disable_clone=False):
     if hasattr(gm, "zero_grad"):
         gm.zero_grad(True)
 
+    # print("gm", gm)
+    # print("args", args)
     # TorchInductor returned callable expects lists. So, may need a boxed calling convention.
     out = gm(args) if hasattr(gm, "_boxed_call") else gm(*args)
+
+    # print("out", out)
 
     if only_fwd:
         return out
     if requires_bwd_pass(out):
         loss = reduce_to_scalar_loss(out)
         loss.backward()
+        # print("loss", loss)
     return collect_results(gm, out, None, args)
 
 
@@ -379,15 +385,22 @@ def same_two_models(
             " Skipping this graph."
         )
         return True
+    
+    # print("ref", ref)
+    # print("res", res)
 
     passing = same(
         ref,
         res,
         fp64_ref,
+        # cos_similarity=True,
         tol=config.repro_tolerance,
         equal_nan=True,
         ignore_non_fp=ignore_non_fp,
     )
+
+    # print("really check accuracy", file=sys.stderr)
+    # print(f"passing: {passing}", file=sys.stderr)
     return passing
 
 

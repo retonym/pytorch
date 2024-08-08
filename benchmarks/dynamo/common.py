@@ -97,6 +97,10 @@ except ImportError:
 if TYPE_CHECKING:
     from torch.onnx._internal.fx import diagnostics
 
+try:
+    import intel_extension_for_pytorch as ipex
+except:
+    pass
 
 log = logging.getLogger(__name__)
 
@@ -114,6 +118,11 @@ output_filename = None
 disable_output = False
 
 MAX_DOWNLOAD_ATTEMPTS = 5
+
+torch._dynamo.config.base_dir = os.environ["TORCHINDUCTOR_CACHE_DIR"]
+torch._dynamo.config.repro_tolerance = 2 * 1e-2
+
+# torch.use_deterministic_algorithms(True)
 
 
 class CI(NamedTuple):
@@ -2679,6 +2688,7 @@ class BenchmarkRunner:
     def check_accuracy(
         self, name, model, example_inputs, optimize_ctx, experiment, tag
     ):
+        print("model summary", model)
         """
         Checks accuracy.
         1) Collect the outputs with fp64 datatype. This is useful for error checking.
@@ -2772,6 +2782,35 @@ class BenchmarkRunner:
                 del model_fp64, inputs_fp64
                 empty_gpu_cache(current_device)
 
+        # with self.pick_grad(name, self.args.training):
+        #     # Collect the fp64 reference outputs to be used later for accuracy checking.
+        #     fp64_outputs = None
+        #     model_fp64 = None
+        #     inputs_fp64 = None
+        #     try:
+        #         model_fp64, inputs_fp64 = cast_to_fp64(
+        #             self.deepcopy_and_maybe_parallelize(model),
+        #             clone_inputs(example_inputs),
+        #         )
+        #         self.init_optimizer(name, current_device, model_fp64.parameters())
+        #         fp64_outputs = self.run_n_iterations(model_fp64, inputs_fp64)
+        #         fp64_outputs = tree_map(
+        #             lambda x: x.to(torch.float64)
+        #             if isinstance(x, torch.Tensor) and x.is_floating_point()
+        #             else x,
+        #             fp64_outputs,
+        #         )
+        #     except Exception:
+        #         log.warning(
+        #             "fp64 golden ref were not generated for %s. Setting accuracy check to cosine",
+        #             name,
+        #         )
+        #         self.args.cosine = True
+        #         fp64_outputs = None
+        #     finally:
+        #         del model_fp64, inputs_fp64
+        #         empty_gpu_cache(current_device)
+
             tolerance, cos_similarity = self.get_tolerance_and_cosine_flag(
                 self.args.training, current_device, name
             )
@@ -2781,7 +2820,11 @@ class BenchmarkRunner:
             accuracy_status = "pass"
 
             # Get results of native pytorch
+            state = torch.xpu.get_rng_state()
+            print("before reset 1", state, flush=True)
             reset_rng_state()
+            state = torch.xpu.get_rng_state()
+            print("after reset 1", state, flush=True)
             model_copy = None
             try:
                 model_copy = self.deepcopy_and_maybe_parallelize(model)
@@ -2802,7 +2845,11 @@ class BenchmarkRunner:
                 empty_gpu_cache(current_device)
 
             # Rerun native pytorch
+            state = torch.xpu.get_rng_state()
+            print("before reset 2", state, flush=True)
             reset_rng_state()
+            state = torch.xpu.get_rng_state()
+            print("after reset 2", state, flush=True)
             model_copy = None
             try:
                 model_copy = self.deepcopy_and_maybe_parallelize(model)
@@ -2851,7 +2898,11 @@ class BenchmarkRunner:
             correct_rerun_result = None
 
             # Run with Dynamo
+            state = torch.xpu.get_rng_state()
+            print("before reset 3", state, flush=True)
             reset_rng_state()
+            state = torch.xpu.get_rng_state()
+            print("after reset 3", state, flush=True)
             torch._dynamo.reset()
             model_copy = None
             try:
@@ -2888,6 +2939,12 @@ class BenchmarkRunner:
             finally:
                 del model_copy
 
+
+            state = torch.xpu.get_rng_state()
+            print("final rng state", state, flush=True)
+            torch._dynamo.reset()
+
+            # print("new_result:", new_result)
             if name in self.skip_accuracy_check_as_eager_non_deterministic:
                 return record_status("pass_due_to_skip", dynamo_start_stats=start_stats)
 
@@ -3356,6 +3413,7 @@ class BenchmarkRunner:
         experiment,
         tag,
     ):
+        breakpoint()
         logging.info("Minifying %s...", name)
         os.environ["TORCH_COMPILE_DEBUG"] = "1"
         os.environ["TORCHDYNAMO_REPRO_AFTER"] = "dynamo"
