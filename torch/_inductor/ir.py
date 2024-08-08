@@ -3089,6 +3089,7 @@ class FixedLayout(Layout):
         stride: Optional[Sequence[Union[Expr, int]]] = None,
         offset: Union[Expr, int] = Integer(0),
     ):
+        # breakpoint()
         if stride is None:
             stride = FlexibleLayout.contiguous_strides(size)
         super().__init__(
@@ -3247,6 +3248,7 @@ class FlexibleLayout(Layout):
         )
 
     def __init__(self, device, dtype, size, stride_order=None):
+        # breakpoint()
         if stride_order:
             strides = FlexibleLayout.fill_ordered(size, stride_order)
         else:
@@ -3434,19 +3436,25 @@ class Buffer(IRNode):
 
     def freeze_layout(self):
         if not isinstance(self.layout, (MultiOutputLayout, NonOwningLayout)):
+            # breakpoint()
+            # log.warning("before freeze_layout %s", self.layout)
             self.layout = self.layout.as_fixed()
+            # log.warning("after freeze_layout %s", self.layout)
 
     def freeze_layout_with_stride_order(self, order, allow_padding=False):
         assert isinstance(self.layout, FlexibleLayout)
         self.layout = self.layout.as_stride_order(order, allow_padding=allow_padding)
+        # log.warning("freeze_layout_with_stride_order %s", self.layout)
 
     def freeze_layout_with_fill_order(self, order):
         assert isinstance(self.layout, FlexibleLayout)
         self.layout = self.layout.as_fill_order(order)
+        # log.warning("freeze_layout_with_fill_order %s", self.layout)
 
     def freeze_layout_with_same_order(self, stride):
         assert isinstance(self.layout, FlexibleLayout)
         self.layout = self.layout.as_same_order(stride)
+        # log.warning("freeze_layout_with_same_order %s", self.layout)
 
     def freeze_layout_with_exact_strides(self, exact_strides, allow_padding=False):
         assert isinstance(self.layout, FlexibleLayout)

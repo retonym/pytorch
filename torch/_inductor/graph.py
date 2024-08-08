@@ -332,6 +332,7 @@ class GraphLowering(torch.fx.Interpreter):
             if layout_opt is not None
             else self.decide_layout_opt(gm, is_inference=is_inference)
         )
+        # log.warning("hello layout_opt, %s", self.layout_opt)
         self.num_channels_last_conv = 0
         self.is_inference = is_inference
         self.is_const_graph = is_const_graph
