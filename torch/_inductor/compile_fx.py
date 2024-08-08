@@ -856,6 +856,7 @@ def fx_codegen_and_compile(
                 const_module=const_graph,
             )
             metrics_helper = metrics.CachedMetricsHelper()
+            print("graph after graph lowering", graph)
             with V.set_graph_handler(graph):
                 graph.run(*example_inputs)
                 output_strides: List[Optional[Tuple[_StrideExprStr, ...]]] = []
