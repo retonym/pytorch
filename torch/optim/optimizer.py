@@ -36,6 +36,8 @@ from torch.utils._foreach_utils import (
 )
 from torch.utils.hooks import RemovableHandle
 
+import logging
+log = logging.getLogger(__name__)
 
 Args: TypeAlias = Tuple[Any, ...]
 Kwargs: TypeAlias = Dict[str, Any]
@@ -149,8 +151,10 @@ def _disable_dynamo_if_unsupported(single_tensor_fn=None):
                     and kwargs["state_steps"][0].is_cuda
                 )
             ):
+                log.debug("aaaaa")
                 return disabled_func(*args, **kwargs)
             else:
+                log.debug("bbbbb")
                 return func(*args, **kwargs)
 
         return maybe_fallback

@@ -1918,6 +1918,7 @@ class DimConstraints:
                         tmp_name = f"_{self._dcp.source_name_to_debug_name[self._dcp.symbol_to_source[s][0].name()]}"
                         tmp = sympy.Symbol(tmp_name, integer=True)
                         from torch._dynamo.source import ConstantSource
+                        # breakpoint()
                         self._dcp.symbol_to_source[tmp] = [ConstantSource(tmp_name)]
                         r = try_solve(sympy.Eq(base, divisor * tmp), s)
                         self._dynamic_results.add(self._dcp.doprint(sympy.Eq(s, r[1])))
@@ -2793,6 +2794,7 @@ class ShapeEnv:
         # Update Feb 2024: this is extra important to do, this doesn't handle
         # unbacked replacements properly nor does it generate deferred runtime
         # asserts
+        # breakpoint()
         if not isinstance(a, SymInt):
             if not isinstance(b, SymInt):
                 assert a == b
@@ -3569,6 +3571,7 @@ class ShapeEnv:
                     f'TORCHDYNAMO_EXTENDED_DEBUG_CREATE_SYMBOL="{sympy_expr}"'
                 )
             fsummary, maybe_user_loc, maybe_extra_debug = self._get_stack_summary(is_debug)
+            # breakpoint()
             self.log.info(
                 "create_symbol %s = %s for %s %s%s (%s)%s%s",
                 sympy_expr, val, source.name(), range_str,
@@ -3641,6 +3644,7 @@ class ShapeEnv:
         # Indicates if we should produce guards for known static values.
         ignore_static=True,
     ) -> List[str]:
+        # breakpoint()
         """
         Generates a list of guards strings which, when evaluated in a context that
         defines tensors for all the sources, returns True or False depending
@@ -3827,6 +3831,7 @@ class ShapeEnv:
                     )
 
             for phantom_symbol in equalities_inputs.phantom_symbols:
+                # breakpoint()
                 # we created additional phantom symbols that are not input shape dimensions
                 symbol_to_source[phantom_symbol].extend(self.var_to_sources[phantom_symbol])
 
@@ -3851,6 +3856,7 @@ class ShapeEnv:
             if isinstance(val, SymInt):
                 s = val.node.expr
                 if isinstance(s, sympy.Symbol):
+                    # breakpoint()
                     symbol_to_source[s].append(source)
                     if (
                         constraint is not None
@@ -3920,6 +3926,7 @@ class ShapeEnv:
             if isinstance(val, SymFloat):
                 s = val.node.expr
                 if isinstance(s, sympy.Symbol):
+                    # breakpoint()
                     symbol_to_source[s].append(source)
                 input_guards.append((source, s))
             else:
@@ -3969,6 +3976,7 @@ class ShapeEnv:
                         property_source = TensorPropertySource(src, TensorProperty.SIZE, i)
                         track_symint(property_source, ss, constraint_size[i])
                 else:
+                    # breakpoint()
                     for i, ss in enumerate(curr_t.size()):
                         property_source = TensorPropertySource(src, TensorProperty.SIZE, i)
                         track_symint(property_source, ss, constraint_size[i])
@@ -4061,6 +4069,7 @@ class ShapeEnv:
         issued = set()
 
         def issue_guard(guard: ShapeGuard) -> None:
+            # breakpoint()
             expr = self.simplify(guard.expr)
 
             # Avoid re-issueing the same guard.
@@ -4106,6 +4115,8 @@ class ShapeEnv:
         # This removes all the checks that follow from bounds
         # We could simply emit those and also the bounds 2 <= size when necessary
         for guard in (guards if guards is not None else self.guards):
+            # print("guard", guard)
+            # breakpoint()
             if self._maybe_evaluate_static(guard.expr, axioms=()) is not None:
                 continue
             issue_guard(guard)
@@ -4736,6 +4747,7 @@ class ShapeEnv:
         return GuardOnDataDependentSymNode(expr, msg)
 
     def _update_var_to_range(self, symbol, vr):
+        # breakpoint()
         lower, upper = vr.lower, vr.upper
 
         # If we have a size-like unbacked SymInt, refuse to refine the range to be
@@ -4769,6 +4781,8 @@ class ShapeEnv:
         Adds or updates a replacement for a symbol.
         Use this instead of `self.replacements[a] = tgt`.
         """
+
+        # breakpoint()
 
         if tgt == self.replacements.get(a, None):
             return
@@ -5159,6 +5173,7 @@ class ShapeEnv:
         """
         Given an expression, evaluates it, adding guards if necessary
         """
+        # breakpoint()
 
         # TODO: split conjunctions and evaluate them separately
 
@@ -5314,6 +5329,7 @@ class ShapeEnv:
                     # or defer to runtime assert on.
                     stack = CapturedTraceback.extract(skip=1)
                     guard = ShapeGuard(g, stack)
+                    # breakpoint()
                     self.guards.append(guard)
                 else:
                     # it's fine to defer simple guards here without checking,
@@ -5445,6 +5461,7 @@ class ShapeEnv:
     #   2. Compute the value range of the right-hand side
     #   3. Update the value range of the variable, if better
     def _refine_ranges(self, expr: sympy.Expr) -> None:
+        # breakpoint()
         expr = self.simplify(expr)
 
         for symbol in expr.free_symbols:
