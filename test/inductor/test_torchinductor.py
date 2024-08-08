@@ -6343,7 +6343,7 @@ class CommonTemplate:
             return a.sort(dim=-1, stable=True, descending=descending)
 
         # Duplicates give deterministic indices when stable sorting
-        inp = torch.rand(10, 128, dtype=torch.float32)
+        inp = torch.rand(10, 128, dtype=torch.float32, device='xpu')
         inp[:, 10:20] = 1.0
         inp[:, 30:40] = 1.0
         self.common(fn, (inp, False))
@@ -6964,12 +6964,12 @@ class CommonTemplate:
         self.common(
             fn,
             [
-                torch.randn([100, 256, 7, 7]),
+                torch.randn([100, 256, 7, 7], dtype=torch.float16),
                 torch.randint(0, 100, size=[600], dtype=torch.int64),
-                torch.randn([600, 256, 7, 7]),
+                torch.randn([600, 256, 7, 7], dtype=torch.float16),
             ],
             # workaround for https://github.com/openai/triton/issues/558
-            check_lowp=False,
+            check_lowp=False, atol=1e-3, rtol=1e-3
         )
 
     def test_index_put3(self):

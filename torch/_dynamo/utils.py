@@ -1430,6 +1430,9 @@ def same(
             res.keys()
         ), f"keys mismatch {set(ref.keys())} == {set(res.keys())}"
         for k in sorted(ref.keys()):
+            # log.warning("check key %s", k)
+            # if k == "features.0.bias.grad" or k == "features.0.weight.grad":
+            #     continue
             if not (
                 same(
                     ref[k],
@@ -1541,6 +1544,14 @@ def same(
                     multiplier = 3.0
 
                 passes_test = res_error <= (multiplier * ref_error + tol / 10.0)
+                # print("check result")
+                # print(f"RMSE (res-fp64): %.5f, (ref-fp64): %.5f and shape=%s. res.dtype: %s, multiplier: %f, tol: %f",
+                #         res_error,
+                #         ref_error,
+                #         res.size(),
+                #         res.dtype,
+                #         multiplier,
+                #         tol, )
                 if (
                     not passes_test
                     and equal_nan
@@ -1551,6 +1562,15 @@ def same(
                     and not inductor_config.cpp.inject_relu_bug_TESTING_ONLY
                 ):
                     passes_test = True
+                # log.warning(
+                #         "RMSE (res-fp64): %.5f, (ref-fp64): %.5f and shape=%s. res.dtype: %s, multiplier: %f, tol: %f",
+                #         res_error,
+                #         ref_error,
+                #         res.size(),
+                #         res.dtype,
+                #         multiplier,
+                #         tol,
+                #     )
                 if not passes_test:
                     log_error(
                         "RMSE (res-fp64): %.5f, (ref-fp64): %.5f and shape=%s. res.dtype: %s, multiplier: %f, tol: %f",
@@ -1563,12 +1583,26 @@ def same(
                     )
                     # import pdb; pdb.set_trace()
                 return passes_test
+                # pass
+
+            # else:
+            #     return True
 
             if ignore_non_fp:
                 return True
 
+            # log.warning("fp64_ref.dtype %s", fp64_ref.dtype)
+            # log.warning("ref %s", ref)
+            # log.warning("res %s", res)
+            # log.warning("is same with tol = 1e-5 %s", torch.allclose(ref, res, atol=1e-5, rtol=1e-5, equal_nan=equal_nan))
+            # log.warning("is same with tol = 1e-6 %s", torch.allclose(ref, res, atol=1e-6, rtol=1e-6, equal_nan=equal_nan))
+            # log.warning("is same with tol = 1e-7 %s", torch.allclose(ref, res, atol=1e-7, rtol=1e-7, equal_nan=equal_nan))
+            # log.warning("is same with tol = 1e-8 %s", torch.allclose(ref, res, atol=1e-8, rtol=1e-8, equal_nan=equal_nan))
+            # log.warning("is same with tol = 1e-9 %s", torch.allclose(ref, res, atol=1e-9, rtol=1e-9, equal_nan=equal_nan))
+            # log.warning("is same with tol = 0.0 %s", torch.allclose(ref, res, atol=0.0, rtol=0.0, equal_nan=equal_nan))
             log_error("Accuracy failed: allclose not within tol=%s", tol)
             return False
+            # return True
     elif isinstance(ref, (str, int, type(None), bool, torch.device)):
         if ignore_non_fp:
             return True

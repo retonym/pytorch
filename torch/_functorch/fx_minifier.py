@@ -183,6 +183,7 @@ def minifier(
     skip_sanity=False,
     max_granularity=None,
 ):
+    breakpoint()
     """
     Minimizes a FX graph with given inputs, such that the resulting FX graph still returns True for module_fails.
 
@@ -307,6 +308,10 @@ def minifier(
                     else:
                         tested.add(idx)
                         new_graph.erase_node(output_node)
+                print("Truncate suffix", file=sys.stderr)
+                print(f"Testing {idx}", file=sys.stderr)
+                print(f"cur_graph: {cur_graph}", file=sys.stderr)
+                print(f"new_graph: {new_graph}", file=sys.stderr)
             env[node] = new_node
         return None
 
@@ -413,6 +418,10 @@ def minifier(
                 continue
             new_graph.eliminate_dead_code()
             new_graph = _consolidate_placeholders(new_graph, new_inps)
+            print("Truncate suffix", file=sys.stderr)
+            print(f"Testing {start_range}", file=sys.stderr)
+            print(f"cur_graph: {cur_graph}", file=sys.stderr)
+            print(f"new_graph: {new_graph}", file=sys.stderr)
             new_state = remove_unused_inputs_unchecked(ReproState(new_graph, new_inps))
             if new_state is None:
                 new_state = ReproState(new_graph, new_inps)

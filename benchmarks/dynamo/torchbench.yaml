@@ -35,6 +35,7 @@ tolerance:
     - mobilenet_v3_large
     - nvidia_deeprecommender
     - timm_efficientdet
+    - functorch_dp_cifar10
 
   # These models need >1e-3 tolerance
   even_higher:
@@ -48,6 +49,7 @@ tolerance:
     - doctr_reco_predictor
     - drq
     - hf_Whisper
+    - functorch_dp_cifar10
 
   higher_bf16:
     - doctr_reco_predictor

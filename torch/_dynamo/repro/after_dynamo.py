@@ -70,6 +70,7 @@ class WrapBackendDebug:
             self.get_compiler_config = unconfigured_compiler_fn.get_compiler_config  # type: ignore[attr-defined]
 
     def __call__(self, gm, example_inputs, **kwargs):
+        # breakpoint()
         compiler_fn = functools.partial(self._torchdynamo_orig_callable, **kwargs)
         assert config.repro_after in ("dynamo", "aot", None)
 
@@ -313,6 +314,7 @@ def dynamo_minifier_backend(gm, example_inputs, compiler_name):
 
 @register_debug_backend
 def dynamo_accuracy_minifier_backend(gm, example_inputs, compiler_name):
+    # breakpoint()
     from functorch.compile import minifier
 
     compiler_fn = lookup_backend(compiler_name)
@@ -420,9 +422,9 @@ def repro_minify(options, mod, load_args):
         compiler_fn,
         compiler_name=options.backend,
     )
-    opt_mod = torch._dynamo.optimize(dynamo_minifier_backend)(mod)
+    opt_mod = torch._dynamo.optimize(dynamo_minifier_backend, dynamic=False)(mod)
 
-    with torch.amp.autocast("xpu", enabled=options.autocast):
+    with torch.amp.autocast(device_type='xpu', enabled=options.autocast):
         opt_mod(*args)
 
 
@@ -433,7 +435,7 @@ def repro_run(options, mod, load_args):
         mod.eval()
         opt_mod.eval()
 
-        with torch.amp.autocast("xpu", enabled=options.autocast):
+        with torch.amp.autocast(device_type='xpu', enabled=options.autocast):
             # TODO: disable clone
             args = run_load_args(options, mod, load_args)
             assert same_two_models(mod, mod, args), "Eager itself failed"
@@ -446,7 +448,7 @@ def repro_run(options, mod, load_args):
             ):
                 raise AccuracyError("Dynamo failed")
     else:
-        with torch.amp.autocast("xpu", enabled=options.autocast):
+        with torch.amp.autocast(device_type='xpu', enabled=options.autocast):
             args = run_load_args(options, mod, load_args)
             ref = run_fwd_maybe_bwd(
                 mod, args, only_fwd=options.only_fwd, disable_clone=True
