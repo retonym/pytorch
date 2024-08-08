@@ -1395,6 +1395,8 @@ class SIMDScheduling(BaseScheduling):
 
         self.codegen_comment(node_schedule)
         final_kernel.call_kernel(final_kernel.kernel_name)
+        # print("final_kernel.kernel_name", final_kernel.kernel_name)
+        # print("final_kernel.args", final_kernel.args)
         if config.nan_asserts:
             final_kernel.codegen_nan_check()
         if config.warn_mix_layout:

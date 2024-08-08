@@ -1646,9 +1646,29 @@ class WrapperCodeGen(CodeGen):
                     if grid_extra_kwargs:
                         grid_str = f"{grid_str}, {grid_extra_kwargs}"
                     grid_str = f"{grid_fn}({grid_str})"
+                if kernel_name == "triton_per_fused_sort_0":
+                    self.writeline(f"state = torch.xpu.get_rng_state()")
+                    self.writeline(f"print(\"before wrong rand\", state, flush=True)")
                 self.writeline(
                     f"{kernel_name}.run({call_args_str}, grid={grid_str}, stream={stream_name})"
                 )
+
+                # breakpoint()
+
+                variable_args_vec = []
+                call_args_vec = call_args_str.split(',')
+                for arg in call_args_vec:
+                    try:
+                        int_val = int(arg)
+                    except:
+                        variable_args_vec.append(arg)
+
+                # print("call_args_str", variable_args_vec)
+                if kernel_name == "triton_per_fused_sort_0":
+                    for arg in variable_args_vec:
+                        self.writeline(
+                            f"print({arg})",
+                        )
                 if (
                     config.triton.autotune_at_compile_time
                     and kernel_name not in self.kernel_autotune_names
@@ -1701,6 +1721,14 @@ class WrapperCodeGen(CodeGen):
                     self.kernel_autotune_calls.writeline(
                         f"{kernel_name}.run({', '.join(all_args)}, grid={grid_str}, stream={stream_name})"
                     )
+
+                    # breakpoint()
+
+                    # if kernel_name == "triton_per_fused_sort_0":
+                    #     for args in all_args:
+                    #         self.kernel_autotune_calls.writeline(
+                    #             f"print {args}\n",
+                    #         )
                     self.kernel_autotune_calls.writeline(
                         f"del {', '.join(arg for arg in tensor_args.values())}\n",
                     )
