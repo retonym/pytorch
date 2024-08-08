@@ -700,6 +700,8 @@ class MetaConverter:
                 f"__meta_utils_unknown_tensor{len(self.tensor_memo)}"
             )
 
+            # print("tensor_memo", self.tensor_memo)
+
         # This indicates you set no_dispatch() before calling into this
         # function.  This is an error: we may be creating fake tensors and
         # will perform operations on them which need fake tensor mode to
@@ -741,6 +743,7 @@ class MetaConverter:
         def sym_sizes_strides_storage_offset(
             t: MetaTensorDesc, src, symbolic_context=symbolic_context
         ) -> Tuple[Tuple[int, ...], Tuple[int, ...], int]:
+            # breakpoint()
             assert t.stride is not None
             if shape_env is not None:
                 fake_mode = t.fake_mode
@@ -1425,6 +1428,7 @@ class MetaConverter:
                         )
 
                 else:
+                    # breakpoint()
                     is_leaf = t.is_leaf
 
                     # Graph-Break for wrapped tensors

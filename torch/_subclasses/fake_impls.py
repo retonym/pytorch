@@ -666,6 +666,8 @@ def conv(fake_mode, func, *args, **kwargs):
             mem_fmt = None
         else:
             if func is aten.convolution.default:
+                # print("select conv backned kwargs", kwargs)
+                # breakpoint()
                 conv_backend = torch._C._select_conv_backend(**kwargs)
             else:
                 conv_backend = torch._C._select_conv_backend(
