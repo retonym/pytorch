@@ -88,9 +88,9 @@ class Interpreter:
         self.extra_traceback = True
 
         # breakpoint()
-        print("\nfuck you")
-        for node in self.graph.nodes:
-            print("node", node)
+        # print("\nfuck you")
+        # for node in self.graph.nodes:
+        #     print("node", node)
 
         if self.garbage_collect_values:
             # Run through reverse nodes and record the first instance of a use
@@ -138,9 +138,9 @@ class Interpreter:
                     desc=f"{self.name}: {str(list(self.graph.nodes)) if config.verbose_progress else ''}",
                     initial=0, position=0, leave=True, disable=config.disable_progress, delay=0)
         
-        print("\nfuck me")
-        for node in self.graph.nodes:
-            print("node", node)
+        # print("\nfuck me")
+        # for node in self.graph.nodes:
+        #     print("node", node)
 
         for node in self.graph.nodes:
             pbar.update(1)
