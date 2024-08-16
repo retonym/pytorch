@@ -1261,7 +1261,7 @@ class FusedSchedulerNode(BaseSchedulerNode):
 
         try:
             buf.splice(self.debug_str_extra())
-        except Exception as e
+        except Exception as e:
             log.warning("Ignoring error in debug_str()", exc_info=True)
             log.warning("exception: %s", e)
 
