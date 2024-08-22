@@ -57,6 +57,10 @@ tolerance:
     - hf_Whisper
     - timm_efficientnet
 
+  higher_fp16_bf16_xpu:
+    - phlippe_resnet
+    - timm_regnet
+
   cosine: []
 
 require_larger_multiplier_for_smaller_tensor:
