@@ -2328,6 +2328,22 @@ def maybe_snapshot_memory(should_snapshot_memory, suffix):
 
             torch.cuda.memory._record_memory_history(enabled=None)
 
+def execute_backward_module_hook(module, grad_input, grad_output):
+    # Execute the module with all its grad_output to get grad_input
+    # This is a placeholder for the actual logic you want to implement
+    # For demonstration, we'll just print the grad_output
+    print(f"Deepest Module: {module.__class__.__name__}, Grad Output: {grad_output}")
+
+    # If you need to modify grad_input, you can do so here
+    # For example, to scale the grad_input by a factor of 2:
+    # new_grad_input = tuple(2 * g for g in grad_input)
+    # return new_grad_input
+
+    compile_module = torch.compile(module)
+    compile_grad_input = compile_module(*grad_output)
+    print("compile_grad_input", compile_grad_input)
+    # is_close = torch.allclose(compile_grad_input, *grad_input, atol=1e-1)
+    # print(f"Grad Input: {grad_input}, Compile Grad Input: {compile_grad_input}, Is Close: {is_close}")
 
 class BenchmarkRunner:
     def __init__(self):
@@ -2688,6 +2704,15 @@ class BenchmarkRunner:
             )
         return model
 
+
+    def replace_hook(self, model):
+
+        for child_name, child in model.named_children():
+            if isinstance(child, torch.nn.LayerNorm):
+                child.register_backward_hook(execute_backward_module_hook)
+            else:
+                self.replace_hook(child)
+
     def check_accuracy(
         self, name, model, example_inputs, optimize_ctx, experiment, tag
     ):
@@ -2854,6 +2879,8 @@ class BenchmarkRunner:
             state = torch.xpu.get_rng_state()
             print("after reset 2", state, flush=True)
             model_copy = None
+
+            # self.replace_hook(model)
             try:
                 model_copy = self.deepcopy_and_maybe_parallelize(model)
                 self.init_optimizer(name, current_device, model_copy.parameters())
