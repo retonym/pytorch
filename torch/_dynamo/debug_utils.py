@@ -367,7 +367,8 @@ def same_two_models(
                 copy.deepcopy(gm), clone_inputs_retaining_gradness(example_inputs)
             )
             fp64_ref = run_fwd_maybe_bwd(fp64_model, fp64_examples, only_fwd)
-        except Exception:
+        except Exception as e:
+            log.warning("exception while casting to fp64: %s", e)
             if require_fp64:
                 raise RuntimeError(  # noqa: B904
                     "Could not generate fp64 outputs, workaround with torch._dynamo.config.same_two_models_use_fp64 = False"
