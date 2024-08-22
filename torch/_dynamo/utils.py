@@ -1792,7 +1792,7 @@ def same(
 
                 passes_test = res_error <= (multiplier * ref_error + tol / 10.0)
                 # print("check result")
-                # print(f"RMSE (res-fp64): %.5f, (ref-fp64): %.5f and shape=%s. res.dtype: %s, multiplier: %f, tol: %f",
+                # print(f"print \n RMSE (res-fp64): %.5f, (ref-fp64): %.5f and shape=%s. res.dtype: %s, multiplier: %f, tol: %f",
                 #         res_error,
                 #         ref_error,
                 #         res.size(),
@@ -1810,7 +1810,7 @@ def same(
                 ):
                     passes_test = True
                 # log.warning(
-                #         "RMSE (res-fp64): %.5f, (ref-fp64): %.5f and shape=%s. res.dtype: %s, multiplier: %f, tol: %f",
+                #         "logger \n RMSE (res-fp64): %.5f, (ref-fp64): %.5f and shape=%s. res.dtype: %s, multiplier: %f, tol: %f",
                 #         res_error,
                 #         ref_error,
                 #         res.size(),
@@ -1831,6 +1831,7 @@ def same(
                         use_larger_multiplier_for_smaller_tensor,
                     )
                 return passes_test
+                # return True
                 # pass
 
             # else:

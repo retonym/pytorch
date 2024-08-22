@@ -90,7 +90,15 @@ class Interpreter:
         # breakpoint()
         # print("\nfuck you")
         # for node in self.graph.nodes:
+        #     print("in the __init__")
         #     print("node", node)
+        #     print("node target: ",node.target)
+        #     print("node args: ",node.args)
+        #     print("node users: ",node.users)
+        #     print("node op: ",node.op)
+        #     print("node type: ",node.type)
+        #     print("node meta: ",node.meta)
+        #     print()
 
         if self.garbage_collect_values:
             # Run through reverse nodes and record the first instance of a use
@@ -140,7 +148,15 @@ class Interpreter:
         
         # print("\nfuck me")
         # for node in self.graph.nodes:
+        #     print("in the run")
         #     print("node", node)
+        #     print("node target: ",node.target)
+        #     print("node args: ",node.args)
+        #     print("node users: ",node.users)
+        #     print("node op: ",node.op)
+        #     print("node type: ",node.type)
+        #     print("node meta: ",node.meta)
+        #     print()
 
         for node in self.graph.nodes:
             pbar.update(1)

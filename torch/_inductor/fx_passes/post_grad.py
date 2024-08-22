@@ -763,6 +763,7 @@ def remove_noop_ops(graph: torch.fx.Graph):
             output_storages.add(get_node_storage(out))
 
     for node in graph.nodes:
+        # print("in the post grad")
         # print("process node: ",node.name)
         # print("node target: ",node.target)
         # print("node args: ",node.args)
