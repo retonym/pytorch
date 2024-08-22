@@ -921,6 +921,9 @@ def speedup_experiment(args, model_iter_fn, model, example_inputs, **kwargs):
         name += ".json"
         name = os.path.join(torch._dynamo.config.base_dir, name)
         p.export_chrome_trace(name)
+        print(p.key_averages().table(sort_by="self_xpu_time_total", row_limit=-1))
+        print(p.key_averages(group_by_input_shape=True).table(sort_by="self_xpu_time_total", row_limit=-1))
+    
     median = np.median(timings, axis=0)
     speedup = median[0] / median[1]
     if args.dump_raw_metrics:
