@@ -308,8 +308,6 @@ def rand_strided(
     else:
         buffer = torch.zeros(size=[needed_size], dtype=dtype, device=device)
 
-    print("needed size", needed_size)
-    buffer = buffer * 1000
     return torch.as_strided(buffer, size, stride)
 
 
