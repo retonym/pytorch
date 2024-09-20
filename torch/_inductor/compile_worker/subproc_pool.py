@@ -35,6 +35,19 @@ def _unpack_msg(data):
 msg_bytes = len(_pack_msg(0, 0))
 
 
+# # 配置日志记录
+# logging.basicConfig(filename='/home/yunfei/code/pytorch/torch/subproc_app.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# def handle_exception(exc_type, exc_value, exc_traceback):
+#     if issubclass(exc_type, KeyboardInterrupt):
+#         sys.__excepthook__(exc_type, exc_value, exc_traceback)
+#         return
+
+#     logging.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+# sys.excepthook = handle_exception
+
+
 def _send_msg(write_pipe, job_id, job_data=b""):
     length = len(job_data)
     write_pipe.write(_pack_msg(job_id, length))
@@ -161,14 +174,17 @@ class SubprocPool:
                     if not self.running:
                         return
                     if isinstance(result, _SubprocExceptionInfo):
+                        # breakpoint()
                         # An exception occurred in the submitted job
                         self.pending_futures[job_id].set_exception(
                             SubprocException(result.details)
                         )
                     elif isinstance(result, Exception):
+                        # breakpoint()
                         # An exception occurred in some of our subprocess machinery.
                         self.pending_futures[job_id].set_exception(result)
                     else:
+                        # breakpoint()
                         self.pending_futures[job_id].set_result(result)
                     del self.pending_futures[job_id]
         except Exception:
@@ -247,12 +263,17 @@ class SubprocMain:
     def _submit_inner(self, job_id, data):
         future = self.pool.submit(functools.partial(SubprocMain.do_job, data))
 
+        # print("data data data", data)
+        # log.warning("data data %s", data)
+
         def callback(_):
             if not self.running:
                 return
             try:
                 result = future.result()
             except Exception as e:
+                # breakpoint()
+                # log.warning("Error in subprocess warning!!", exc_info=e)
                 log.exception("Error in subprocess")
                 result = pickle.dumps(e, pickle.HIGHEST_PROTOCOL)
             assert isinstance(result, bytes)
@@ -267,8 +288,11 @@ class SubprocMain:
         # do the pickle/unpickle in the sub-subproc
         job = pickle.loads(data)
         try:
+            # log.warning("hello world 1 !!")
             result = job()
+            # log.warning("hello world 2 !!")
         except Exception as e:
+            # log.warning("fuck fuck Error in subprocess warning!!", exc_info=e)
             result = _SubprocExceptionInfo(traceback.format_exc())
         return pickle.dumps(result, pickle.HIGHEST_PROTOCOL)
 

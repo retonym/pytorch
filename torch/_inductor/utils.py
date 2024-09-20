@@ -1503,7 +1503,8 @@ def get_sympy_Expr_dtype(val: sympy.Expr) -> torch.dtype:
 @contextlib.contextmanager
 def maybe_profile(should_profile, *args, **kwargs):
     if should_profile:
-        with torch.profiler.profile(record_shapes=True, with_stack=True, *args, **kwargs) as p:
+        # with torch.profiler.profile(record_shapes=True, with_stack=True, *args, **kwargs) as p:
+        with torch.profiler.profile(*args, **kwargs) as p:
             yield p
     else:
         yield

@@ -3050,6 +3050,8 @@ class TritonScheduling(SIMDScheduling):
 
             basename, _, kernel_path = get_path(code_hash(src_code.strip()), "py")
 
+            # print("src_code", src_code)
+
             compile_wrapper = IndentedBuffer()
             compile_wrapper.writeline(f"async_compile.triton({subs_name!r}, '''")
             compile_wrapper.splice(src_code, strip=True)

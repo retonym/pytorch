@@ -922,7 +922,7 @@ def speedup_experiment(args, model_iter_fn, model, example_inputs, **kwargs):
         name = os.path.join(torch._dynamo.config.base_dir, name)
         p.export_chrome_trace(name)
         print(p.key_averages().table(sort_by="self_xpu_time_total", row_limit=-1))
-        print(p.key_averages(group_by_input_shape=True).table(sort_by="self_xpu_time_total", row_limit=-1))
+        # print(p.key_averages(group_by_input_shape=True).table(sort_by="self_xpu_time_total", row_limit=-1))
     
     median = np.median(timings, axis=0)
     speedup = median[0] / median[1]
@@ -2797,6 +2797,11 @@ class BenchmarkRunner:
                         lambda x: x.to(device=current_device),
                         fp64_outputs,
                     )
+
+                current_memory3 = torch.xpu.memory_allocated() / 10**9
+                peak_memory3 = torch.xpu.max_memory_allocated() / 10**9
+                print(f"current_memory3: {current_memory3:.2f} peak_memory3: {peak_memory3:.2f} GB")
+                exit()
             except Exception as e:
                 log.warning(
                     "fp64 golden ref were not generated for %s. Setting accuracy check to cosine",
