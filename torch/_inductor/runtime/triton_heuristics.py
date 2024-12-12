@@ -474,6 +474,11 @@ class CachingAutotuner(KernelInterface):
                 "debug": compile_meta["debug"],
                 "sanitize_overflow": False,  # turn off additional asserts added for overflow checks
             }
+            if self.device_props.type == "xpu":
+                kernel_name = self.inductor_meta.get("kernel_name", "triton_")
+                if kernel_name.startswith("triton_tem_"):
+                    options['advanced_path'] = True
+                    options['grf_mode'] = 'large'
             if self.device_props.type == "hip":
                 if "waves_per_eu" in compile_meta:
                     options["waves_per_eu"] = compile_meta["waves_per_eu"]
