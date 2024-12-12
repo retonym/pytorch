@@ -304,6 +304,9 @@ def get_split_k(B: int, H: int, Mk: int, SM: int = 128) -> int:
 
 
 def _get_decoding_default_config(key) -> Tuple[int, int, int]:
+    if torch.version.xpu:
+        # use a100 config for xpu temporarily
+        return (64, 2, 1)
     dtype = key.get_dtype()
     head_dim = key.get_size()[-1]
     sm_version = torch.cuda.get_device_capability()

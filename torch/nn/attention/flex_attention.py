@@ -1117,7 +1117,7 @@ def _validate_device(query: Tensor, key: Tensor, value: Tensor):
     """TODO: Remove once non cuda device support is added
     We only need to check query since we have already that q,k,v are on the same device
     """
-    if query.device.type != "cuda":
+    if query.device.type != "cuda" and query.device.type != "xpu":
         raise ValueError(
             "FlexAttention is only supported on CUDA devices. "
             f"Found input tensors on {query.device.type} device."

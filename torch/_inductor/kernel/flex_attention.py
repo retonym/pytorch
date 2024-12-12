@@ -715,7 +715,11 @@ def _get_nv_config(query, mode: Mode) -> Tuple[int, int, int, int]:
     head_dim = query.get_size()[-1]
     fwd_config = None
 
-    capability = torch.cuda.get_device_capability()
+    if torch.version.xpu:
+        # use a100 config for xpu temporarily
+        capability = (8, 0)
+    else:
+        capability = torch.cuda.get_device_capability()
 
     if mode == Mode.fwd:
         if head_dim <= 256:
